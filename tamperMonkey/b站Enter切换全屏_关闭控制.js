@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         B站全屏/关闭控制
+// @name         B站全屏/关闭控制优化版
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  Enter切换全屏，单引号键关闭标签页
-// @author       LiPan
+// @version      1.3
+// @description  Enter切换全屏（排除输入框场景），单引号键关闭标签页
+// @author       YourName
 // @match        https://www.bilibili.com/video/*
 // @icon         https://www.bilibili.com/favicon.ico
 // @grant        none
@@ -11,6 +11,16 @@
 
 (function() {
     'use strict';
+
+    // 判断焦点是否在可输入元素上[6,7](@ref)
+    function isFocusOnInput() {
+        const activeElement = document.activeElement;
+        return (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.isContentEditable
+        );
+    }
 
     // 全屏状态检测
     function isFullscreen() {
@@ -45,24 +55,24 @@
     function closeTab() {
         try {
             window.close();
-            // 如果无法直接关闭，尝试跳转到空白页
-            if (!window.closed) {
-                window.location.href = 'about:blank';
-            }
+            if (!window.closed) window.location.href = 'about:blank';
         } catch(e) {
             console.log('关闭标签页需要用户交互权限');
         }
     }
 
-    // 键盘事件处理
+    // 键盘事件处理（关键修改部分）[3,6](@ref)
     function handleKeyPress(event) {
+        // 焦点在输入元素时不处理Enter键
+        if (event.code === 'Enter' && isFocusOnInput()) return;
+
         // Enter键切换全屏
         if (event.code === 'Enter') {
             event.preventDefault();
             toggleFullscreen();
         }
 
-        // 单引号物理键关闭页面（兼容中英文输入法）
+        // 单引号物理键关闭页面
         if (event.code === 'Quote') {
             event.preventDefault();
             closeTab();
